@@ -8,21 +8,15 @@
     <div class="alert alert-success">{{ session('status') }}</div>
   @endif
 
-  <form method="GET" action="{{ route('recipes.index') }}" class="row g-2 mb-3">
-    <div>
+  <form method="GET" action="{{ route('recipes.index') }}">
       <input type="text" name="q" value="{{ request('q') }}" placeholder="Пребарај по наслов...">
-    <div>
       <select name="category_id">
         <option value="">Сите категории</option>
         @foreach ($categories as $id => $name)
           <option value="{{ $id }}" {{ (string)$id === (string)request('category_id') ? 'selected' : '' }}>{{ $name }}</option>
         @endforeach
       </select>
-    </div>
-    </div>
-    <div class="col-md-2">
       <button type="submit">Филтрирај</button>
-    </div>
   </form>
 
   <table class="table table-bordered">
