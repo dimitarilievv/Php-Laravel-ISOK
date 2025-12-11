@@ -14,13 +14,15 @@ class CategoryRequest extends FormRequest
 
     public function rules(): array
     {
-        $category = $this->route('category');
+        $param = $this->route('category');
+        $categoryId = is_object($param) ? ($param->id ?? null) : (is_numeric($param) ? (int) $param : null);
+
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('categories', 'name')->ignore($category?->id),
+                Rule::unique('categories', 'name')->ignore($categoryId),
             ],
         ];
     }

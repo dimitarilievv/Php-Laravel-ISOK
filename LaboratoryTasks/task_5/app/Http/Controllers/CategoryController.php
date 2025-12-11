@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CategoryRequest;
-use App\Models\Category;
+use App\Repositories\CategoryRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    protected CategoryRepositoryInterface $categories;
+
+    public function __construct(CategoryRepositoryInterface $categories)
+    {
+        $this->categories = $categories;
+    }
+
     public function index(): View
     {
-        $categories = Category::query()->orderBy('name')->paginate(10);
+        $categories = $this->categories->paginate(10);
         return view('categories.index', compact('categories'));
     }
 
@@ -23,31 +29,34 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request): RedirectResponse
     {
-        Category::create($request->validated());
+        $this->categories->create($request->validated());
         return redirect()->route('categories.index')->with('status', 'Категоријата е креирана.');
     }
 
-    public function show(Category $category): View
+    public function show(int $id): View
     {
-        $recipes = $category->recipes()->latest()->paginate(10);
+        $category = $this->categories->find($id);
+        $recipes = $this->categories->recipesPaginated($category, 10);
         return view('categories.show', compact('category', 'recipes'));
     }
 
-    public function edit(Category $category): View
+    public function edit(int $id): View
     {
+        $category = $this->categories->find($id);
         return view('categories.edit', compact('category'));
     }
 
-    public function update(CategoryRequest $request, Category $category): RedirectResponse
+    public function update(CategoryRequest $request, int $id): RedirectResponse
     {
-        $category->update($request->validated());
+        $category = $this->categories->find($id);
+        $this->categories->update($category, $request->validated());
         return redirect()->route('categories.index')->with('status', 'Категоријата е ажурирана.');
     }
 
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(int $id): RedirectResponse
     {
-        $category->delete();
+        $category = $this->categories->find($id);
+        $this->categories->delete($category);
         return redirect()->route('categories.index')->with('status', 'Категоријата е избришана.');
     }
 }
-

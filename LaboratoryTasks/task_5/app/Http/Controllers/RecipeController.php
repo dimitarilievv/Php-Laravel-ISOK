@@ -3,64 +3,64 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RecipeRequest;
-use App\Models\Category;
-use App\Models\Recipe;
+use App\Repositories\RecipeRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RecipeController extends Controller
 {
+    protected RecipeRepositoryInterface $recipes;
+
+    public function __construct(RecipeRepositoryInterface $recipes)
+    {
+        $this->recipes = $recipes;
+    }
+
     public function index(Request $request): View
     {
-        $query = Recipe::query()->with('category')->latest();
-
-        if ($search = trim((string) $request->query('q'))) {
-            $query->where('title', 'like', "%$search%");
-        }
-
-        if ($categoryId = $request->query('category_id')) {
-            $query->where('category_id', $categoryId);
-        }
-
-        $recipes = $query->paginate(10)->appends($request->query());
-        $categories = Category::orderBy('name')->pluck('name', 'id');
-
+        $filters = $request->only(['q', 'category_id']);
+        $recipes = $this->recipes->indexPaginated($filters, 10);
+        $categories = $this->recipes->categoryOptions();
         return view('recipes.index', compact('recipes', 'categories'));
     }
 
     public function create(): View
     {
-        $categories = Category::orderBy('name')->pluck('name', 'id');
+        $categories = $this->recipes->categoryOptions();
         return view('recipes.create', compact('categories'));
     }
 
     public function store(RecipeRequest $request): RedirectResponse
     {
-        Recipe::create($request->validated());
+        $this->recipes->create($request->validated());
         return redirect()->route('recipes.index')->with('status', 'Рецептот е креиран.');
     }
 
-    public function show(Recipe $recipe): View
+    public function show(int $id): View
     {
+        $recipe = $this->recipes->find($id);
         return view('recipes.show', compact('recipe'));
     }
 
-    public function edit(Recipe $recipe): View
+    public function edit(int $id): View
     {
-        $categories = Category::orderBy('name')->pluck('name', 'id');
+        $recipe = $this->recipes->find($id);
+        $categories = $this->recipes->categoryOptions();
         return view('recipes.edit', compact('recipe', 'categories'));
     }
 
-    public function update(RecipeRequest $request, Recipe $recipe): RedirectResponse
+    public function update(RecipeRequest $request, int $id): RedirectResponse
     {
-        $recipe->update($request->validated());
+        $recipe = $this->recipes->find($id);
+        $this->recipes->update($recipe, $request->validated());
         return redirect()->route('recipes.index')->with('status', 'Рецептот е ажуриран.');
     }
 
-    public function destroy(Recipe $recipe): RedirectResponse
+    public function destroy(int $id): RedirectResponse
     {
-        $recipe->delete();
+        $recipe = $this->recipes->find($id);
+        $this->recipes->delete($recipe);
         return redirect()->route('recipes.index')->with('status', 'Рецептот е избришан.');
     }
 }
